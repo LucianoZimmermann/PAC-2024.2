@@ -1,0 +1,50 @@
+[33mcommit 9d78f961e962f892cb59e79bb42e65dbeb5a18a3[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfeature/PAC-14[m[33m, [m[1;31morigin/feature/PAC-14[m[33m)[m
+Author: Luiz Eduardo Uber <155019755+dadouber@users.noreply.github.com>
+Date:   Sun Oct 13 06:14:11 2024 -0300
+
+    Criando tela de chamadas
+
+[33mcommit d9c1fe43426558102b16582eb6eddd6d6db5c95c[m[33m ([m[1;31morigin/master[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mmaster[m[33m)[m
+Author: rafaelgadotti <127154328+rafaelgadotti@users.noreply.github.com>
+Date:   Mon Oct 7 20:14:18 2024 -0300
+
+    Update README.md
+
+[33mcommit 105eaf11f8923ed4f9f477a8fea23932c11acae7[m
+Author: LucianoZimmermann <102353969+LucianoZimmermann@users.noreply.github.com>
+Date:   Mon Oct 7 20:12:16 2024 -0300
+
+    Update README.md
+
+[33mcommit db0caeb2b6480bba4226c6f576be62ab49101df7[m
+Author: LucianoZimmermann <102353969+LucianoZimmermann@users.noreply.github.com>
+Date:   Mon Oct 7 19:47:28 2024 -0300
+
+    Update README.md
+
+[33mcommit 988482a05da03e6547db4a943383816183a4f620[m
+Merge: 4cd149a ea84f6e
+Author: Luiz Eduardo Uber <155019755+dadouber@users.noreply.github.com>
+Date:   Mon Oct 7 19:30:08 2024 -0300
+
+    Merge pull request #1 from LucianoZimmermann/feature/PAC-13
+    
+    botoes e paginas para cadastro
+
+[33mcommit ea84f6ec408512ba0b52b64e82963d4018d7da0a[m[33m ([m[1;31morigin/feature/PAC-13[m[33m)[m
+Author: LucianoZimmermann <lucianolz123@gmail.com>
+Date:   Mon Sep 30 23:05:41 2024 -0300
+
+    botoes e paginas para cadastro
+
+[33mcommit 4cd149a0b328d3e813c9400e8e640c13e5f87a31[m
+Author: LucianoZimmermann <lucianolz123@gmail.com>
+Date:   Mon Sep 30 22:56:21 2024 -0300
+
+    adicionando dependecias
+
+[33mcommit 7e204fcf409e37e80e141497b0c10d29c225a48a[m
+Author: LucianoZimmermann <lucianolz123@gmail.com>
+Date:   Mon Sep 30 22:54:25 2024 -0300
+
+    criando primeiras funcoes
