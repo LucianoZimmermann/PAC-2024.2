@@ -4,6 +4,7 @@ import 'tela_inicial.dart'; // Importe a TelaInicial
 import 'cadastrar_aluno_page.dart'; // Importe a tela de cadastro de aluno
 import 'cadastrar_professora_page.dart'; // Importe a tela de cadastro de professora
 import 'buscar_alunos_page.dart'; // Importe a tela de buscar alunos
+import 'tela_chamada.dart'; // Importe a TelaChamada
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -45,6 +46,7 @@ class MyApp extends StatelessWidget {
         '/cadastrarAluno': (context) => CadastrarAlunoPage(dbHelper: dbHelper),
         '/cadastrarProfessora': (context) => CadastrarProfessoraPage(dbHelper: dbHelper),
         '/buscarAlunos': (context) => BuscarAlunosPage(dbHelper: dbHelper),
+        '/chamada': (context) => TelaChamada(dbHelper: dbHelper), // Passando o dbHelper para TelaChamada
       },
     );
   }

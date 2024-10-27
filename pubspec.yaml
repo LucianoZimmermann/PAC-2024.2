@@ -8,6 +8,7 @@ dependencies:
   flutter:
     sdk: flutter
   postgres: ^2.4.0 # Dependência para PostgreSQL
+  table_calendar: ^3.0.0 # Adicionando o pacote para calendário
 
 dev_dependencies:
   flutter_test:
@@ -15,3 +16,4 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+

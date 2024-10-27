@@ -62,7 +62,23 @@ class TelaInicial extends StatelessWidget {
               onPressed: () {
                 Navigator.pushNamed(context, '/buscarAlunos');
               },
-              child: Text('Chamada'),
+              child: Text('Buscar Aluno'), // Texto alterado para "Buscar Aluno"
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red, // Cor do botão
+                foregroundColor: Colors.white, // Cor do texto do botão
+                padding: EdgeInsets.symmetric(vertical: 20, horizontal: 40), // Aumenta o padding
+                textStyle: TextStyle(
+                  fontSize: 18, // Aumenta o tamanho do texto
+                  fontWeight: FontWeight.bold, // Deixa o texto em negrito
+                ),
+              ),
+              onPressed: () {
+                Navigator.pushNamed(context, '/chamada');
+              },
+              child: Text('Chamada'), // Novo botão para "Chamada"
             ),
           ],
         ),
