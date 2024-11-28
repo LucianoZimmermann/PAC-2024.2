@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
-import 'cadastrar_aluno_page.dart';
-import 'cadastrar_professora_page.dart';
-import 'buscar_alunos_page.dart';
-import 'tela_chamada.dart';
-import 'database_helper.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class TelaInicial extends StatelessWidget {
-  final DatabaseHelper dbHelper;
+  final FirebaseFirestore firebaseFirestore;
 
-  TelaInicial({required this.dbHelper});
+  // Construtor recebendo o FirebaseFirestore
+  TelaInicial({required this.firebaseFirestore});
 
   @override
   Widget build(BuildContext context) {

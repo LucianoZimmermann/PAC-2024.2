@@ -1,29 +1,40 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart'; // Importando o Firestore
+import 'firebase_options.dart'; // Importando as opções geradas pelo Firebase CLI
 import 'buscar_alunos_page.dart';
 import 'cadastrar_aluno_page.dart';
 import 'cadastrar_professora_page.dart';
 import 'tela_inicial.dart';
 import 'tela_chamada.dart';
-import 'database_helper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  DatabaseHelper dbHelper = DatabaseHelper();
 
+  bool isFirebaseInitialized = false;
+
+  // Inicialize o Firebase com as configurações corretas
   try {
-    await dbHelper.initialize();
-    print("Banco de dados inicializado com sucesso.");
+    await Firebase.initializeApp(
+      options:
+          DefaultFirebaseOptions.currentPlatform, // Usando as opções geradas
+    );
+    print("Firebase inicializado com sucesso.");
+    isFirebaseInitialized = true; // Marca como inicializado com sucesso
   } catch (e) {
-    print("Erro ao inicializar o banco de dados: $e");
+    print("Erro ao inicializar o Firebase: $e");
+    // Se não conseguir inicializar o Firebase, o valor de isFirebaseInitialized será false
   }
 
-  runApp(MyApp(dbHelper: dbHelper));
+  // Passando o estado de inicialização do Firebase para o MyApp
+  runApp(MyApp(isFirebaseInitialized: isFirebaseInitialized));
 }
 
 class MyApp extends StatelessWidget {
-  final DatabaseHelper dbHelper;
+  final bool isFirebaseInitialized;
 
-  MyApp({required this.dbHelper});
+  const MyApp({Key? key, required this.isFirebaseInitialized})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -32,17 +43,22 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: TelaInicial(dbHelper: dbHelper),
+      home: isFirebaseInitialized
+          ? TelaInicial(
+              firebaseFirestore:
+                  FirebaseFirestore.instance) // Passando o Firestore
+          : Scaffold(
+              body: Center(child: Text('Erro ao inicializar o Firebase!')),
+            ),
       routes: {
-        '/cadastrarAluno': (context) => CadastrarAlunoPage(dbHelper: dbHelper),
-        '/cadastrarProfessora': (context) => CadastrarProfessoraPage(dbHelper: dbHelper),
-        '/buscarAlunos': (context) => BuscarAlunosPage(dbHelper: dbHelper),
+        '/cadastrarAluno': (context) => CadastrarAlunoPage(),
+        '/cadastrarProfessora': (context) => CadastrarProfessoraPage(),
+        '/buscarAlunos': (context) => BuscarAlunosPage(),
         '/chamada': (context) => TelaChamada(
-          dbHelper: dbHelper,
-          onChamadaConcluida: () {
-            // Lógica após a chamada ser concluída
-          },
-        ),
+              onChamadaConcluida: () {
+                // Lógica após a chamada ser concluída
+              },
+            ),
       },
     );
   }

@@ -1,108 +1,170 @@
-import 'package:postgres/postgres.dart';
+import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
+import 'dart:convert'; // Importando para trabalhar com JSON
 
 class DatabaseHelper {
-  late PostgreSQLConnection _connection;
+  static Database? _database;
 
-  DatabaseHelper() {
-    _connection = PostgreSQLConnection(
-      'localhost',
-      5432,
-      'ama',
-      username: 'postgres',
-      password: '241505',
-    );
-  }
+  // Define os nomes das tabelas
+  static const String TABLE_PROFESSORES = 'professores';
+  static const String TABLE_ALUNOS = 'alunos';
+  static const String TABLE_PRESENCAS = 'presencas';
 
-  Future<void> initialize() async {
-    try {
-      await _connection.open();
-      await _createTables();
-      print('Conexão estabelecida e tabelas criadas!');
-    } catch (e) {
-      print('Erro ao conectar ao banco de dados: $e');
+  // Define os campos da tabela `professores`
+  static const String COLUMN_ID = 'id';
+  static const String COLUMN_NOME = 'nome';
+
+  // Define os campos da tabela `alunos`
+  static const String COLUMN_MATRICULA = 'matricula';
+  static const String COLUMN_DIA_SEMANA =
+      'diaSemana'; // Alterar para string JSON
+
+  // Define os campos da tabela `presencas`
+  static const String COLUMN_ALUNO_ID = 'alunoId';
+  static const String COLUMN_DATA = 'data';
+  static const String COLUMN_PRESENTE = 'presente';
+
+  // Função para inicializar o banco de dados
+  Future<Database> get database async {
+    if (_database != null) {
+      return _database!;
     }
+    _database = await _initDatabase();
+    return _database!;
   }
 
-  Future<void> _createTables() async {
-    await _connection.execute('DROP TABLE IF EXISTS presencas;');
-    await _connection.execute('DROP TABLE IF EXISTS alunos;');
-    await _connection.execute('DROP TABLE IF EXISTS professoras;');
+  // Criação do banco de dados
+  Future<Database> _initDatabase() async {
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, 'app_database.db');
 
-    await _connection.execute(''' 
-      CREATE TABLE IF NOT EXISTS professoras (
-        id SERIAL PRIMARY KEY,
-        nome VARCHAR(100) NOT NULL
-      );
-    ''');
+    return await openDatabase(
+      path,
+      version: 2, // Incrementando a versão para permitir alterações no banco
+      onCreate: (db, version) async {
+        // Criação da tabela `professores`
+        await db.execute('''
+          CREATE TABLE $TABLE_PROFESSORES(
+            $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            $COLUMN_NOME TEXT
+          )
+        ''');
 
-    await _connection.execute(''' 
-      CREATE TABLE IF NOT EXISTS alunos (
-        id SERIAL PRIMARY KEY,
-        nome VARCHAR(100) NOT NULL,
-        matricula VARCHAR(50) NOT NULL UNIQUE,
-        dias_na_semana TEXT[] NOT NULL,
-        id_professora INTEGER REFERENCES professoras(id)
-      );
-    ''');
+        // Criação da tabela `alunos` com `diaSemana` armazenado como JSON
+        await db.execute('''
+          CREATE TABLE $TABLE_ALUNOS(
+            $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            $COLUMN_MATRICULA INTEGER,
+            $COLUMN_NOME TEXT,
+            $COLUMN_DIA_SEMANA TEXT
+          )
+        ''');
 
-    await _connection.execute(''' 
-      CREATE TABLE IF NOT EXISTS presencas (
-        id SERIAL PRIMARY KEY,
-        id_aluno INTEGER REFERENCES alunos(id),
-        data DATE NOT NULL,
-        presente BOOLEAN NOT NULL
-      );
-    ''');
-  }
-
-  Future<List> listarProfessoras() async {
-    final List<Map<String, dynamic>> professoras = await _connection.mappedResultsQuery('SELECT * FROM professoras');
-    return professoras.map((p) => p.values.first).toList();
-  }
-
-  Future<List> listarAlunosPorProfessora(int idProfessora) async {
-    final List<Map<String, dynamic>> alunos = await _connection.mappedResultsQuery(
-      'SELECT * FROM alunos WHERE id_professora = @idProfessora',
-      substitutionValues: {'idProfessora': idProfessora},
+        // Criação da tabela `presencas`
+        await db.execute('''
+          CREATE TABLE $TABLE_PRESENCAS(
+            $COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,
+            $COLUMN_ALUNO_ID INTEGER,
+            $COLUMN_DATA TEXT,
+            $COLUMN_PRESENTE INTEGER,
+            FOREIGN KEY($COLUMN_ALUNO_ID) REFERENCES $TABLE_ALUNOS($COLUMN_ID)
+          )
+        ''');
+      },
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          // Alterações no banco de dados quando a versão for 2
+          // Exemplo de como adicionar uma coluna, se necessário:
+          // await db.execute('''ALTER TABLE $TABLE_ALUNOS ADD COLUMN $COLUMN_DIA_SEMANA TEXT''');
+        }
+      },
     );
-    return alunos.map((a) => a.values.first).toList();
   }
 
-  Future<void> inserirAluno(String nome, String matricula, List<String> dias, int idProfessora) async {
-    await _connection.execute(''' 
-      INSERT INTO alunos (nome, matricula, dias_na_semana, id_professora) 
-      VALUES (@nome, @matricula, @dias, @idProfessora)
-    ''', substitutionValues: {
-      'nome': nome,
-      'matricula': matricula,
-      'dias': dias,
-      'idProfessora': idProfessora,
-    });
+  // Função para inserir um professor
+  Future<int> insertProfessor(Map<String, dynamic> professor) async {
+    final db = await database;
+    return await db.insert(TABLE_PROFESSORES, professor);
   }
 
-  Future<List> listarPresencasPorAluno(int alunoId) async {
-    final List<Map<String, dynamic>> presencas = await _connection.mappedResultsQuery(
-      'SELECT * FROM presencas WHERE id_aluno = @idAluno',
-      substitutionValues: {'idAluno': alunoId},
+  // Função para inserir um aluno
+  Future<int> insertAluno(Map<String, dynamic> aluno) async {
+    final db = await database;
+
+    // Convertendo a lista `diaSemana` para uma string JSON antes de salvar
+    aluno[COLUMN_DIA_SEMANA] = jsonEncode(aluno[COLUMN_DIA_SEMANA]);
+
+    return await db.insert(TABLE_ALUNOS, aluno);
+  }
+
+  // Função para inserir uma presença
+  Future<int> insertPresenca(Map<String, dynamic> presenca) async {
+    final db = await database;
+    return await db.insert(TABLE_PRESENCAS, presenca);
+  }
+
+  // Função para obter todos os professores
+  Future<List<Map<String, dynamic>>> getAllProfessores() async {
+    final db = await database;
+    return await db.query(TABLE_PROFESSORES);
+  }
+
+  // Função para obter todos os alunos
+  Future<List<Map<String, dynamic>>> getAllAlunos() async {
+    final db = await database;
+    var alunos = await db.query(TABLE_ALUNOS);
+
+    // Convertendo a string JSON de volta para lista de `diaSemana`
+    for (var aluno in alunos) {
+      try {
+        aluno[COLUMN_DIA_SEMANA] = aluno[COLUMN_DIA_SEMANA] =
+            aluno[COLUMN_DIA_SEMANA] != null
+                ? (aluno[COLUMN_DIA_SEMANA]
+                    as String) // Se o valor não for nulo, converte para String
+                : ''; // Caso contrário, atribui uma string vazia
+      } catch (e) {
+        // Em caso de erro na conversão, atribuímos uma lista vazia
+        aluno[COLUMN_DIA_SEMANA] = [];
+      }
+    }
+
+    return alunos;
+  }
+
+  // Função para obter as presenças de um aluno
+  Future<List<Map<String, dynamic>>> getPresencasPorAluno(int alunoId) async {
+    final db = await database;
+    return await db.query(
+      TABLE_PRESENCAS,
+      where: '$COLUMN_ALUNO_ID = ?',
+      whereArgs: [alunoId],
     );
-    return presencas.map((p) => p.values.first).toList();
   }
 
-  Future<void> registrarPresenca(int idAluno, DateTime data, bool presente) async {
-    await _connection.execute(''' 
-      INSERT INTO presencas (id_aluno, data, presente) VALUES (@idAluno, @data, @presente)
-    ''', substitutionValues: {
-      'idAluno': idAluno,
-      'data': data,
-      'presente': presente,
-    });
+  // Função para atualizar a presença de um aluno
+  Future<int> updatePresenca(int id, Map<String, dynamic> presenca) async {
+    final db = await database;
+    return await db.update(
+      TABLE_PRESENCAS,
+      presenca,
+      where: '$COLUMN_ID = ?',
+      whereArgs: [id],
+    );
   }
 
-  Future<void> inserirProfessora(String nome) async {
-    await _connection.execute(''' 
-      INSERT INTO professoras (nome) VALUES (@nome)
-    ''', substitutionValues: {
-      'nome': nome,
-    });
+  // Função para excluir uma presença
+  Future<int> deletePresenca(int id) async {
+    final db = await database;
+    return await db.delete(
+      TABLE_PRESENCAS,
+      where: '$COLUMN_ID = ?',
+      whereArgs: [id],
+    );
+  }
+
+  // Função para fechar o banco de dados
+  Future<void> closeDatabase() async {
+    final db = await database;
+    await db.close();
   }
 }

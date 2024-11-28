@@ -1,29 +1,34 @@
 import 'package:flutter/material.dart';
-import 'database_helper.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CadastrarProfessoraPage extends StatefulWidget {
-  final DatabaseHelper dbHelper;
-
-  CadastrarProfessoraPage({required this.dbHelper});
-
   @override
-  _CadastrarProfessoraPageState createState() => _CadastrarProfessoraPageState();
+  _CadastrarProfessoraPageState createState() =>
+      _CadastrarProfessoraPageState();
 }
 
 class _CadastrarProfessoraPageState extends State<CadastrarProfessoraPage> {
-  final TextEditingController _nomeProfessoraController = TextEditingController();
+  final TextEditingController _nomeProfessoraController =
+      TextEditingController();
 
+  // Função para cadastrar a professora no Firestore
   Future<void> cadastrarProfessora() async {
     String nome = _nomeProfessoraController.text.trim();
     if (nome.isNotEmpty) {
       try {
-        await widget.dbHelper.inserirProfessora(nome);
-        Navigator.pop(context);
+        // Adicionando a professora na coleção 'professores'
+        await FirebaseFirestore.instance.collection('professores').add({
+          'nome': nome,
+          'dataCadastro': FieldValue.serverTimestamp(),
+        });
+        Navigator.pop(context); // Voltar para a tela anterior
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao cadastrar professora: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erro ao cadastrar professora: $e')));
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Nome não pode estar vazio.')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('Nome não pode estar vazio.')));
     }
   }
 

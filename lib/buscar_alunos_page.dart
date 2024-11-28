@@ -1,12 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'database_helper.dart';
 
 class BuscarAlunosPage extends StatefulWidget {
-  final DatabaseHelper dbHelper;
-
-  BuscarAlunosPage({required this.dbHelper});
-
   @override
   _BuscarAlunosPageState createState() => _BuscarAlunosPageState();
 }
@@ -20,6 +16,8 @@ class _BuscarAlunosPageState extends State<BuscarAlunosPage> {
   DateTime selectedDate = DateTime.now();
   List<String> diasBloqueados = [];
 
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   @override
   void initState() {
     super.initState();
@@ -28,7 +26,15 @@ class _BuscarAlunosPageState extends State<BuscarAlunosPage> {
 
   Future<void> carregarProfessoras() async {
     try {
-      professoras = List<Map<String, dynamic>>.from(await widget.dbHelper.listarProfessoras());
+      // Buscando professoras do Firestore
+      QuerySnapshot professorasSnapshot =
+          await _firestore.collection('professoras').get();
+      professoras = professorasSnapshot.docs.map((doc) {
+        return {
+          'id': doc.id,
+          'nome': doc['nome'],
+        };
+      }).toList();
       setState(() {});
     } catch (e) {
       print("Erro ao carregar professoras: $e");
@@ -37,9 +43,21 @@ class _BuscarAlunosPageState extends State<BuscarAlunosPage> {
 
   Future<void> buscarAlunos() async {
     if (professoraSelecionada != null) {
-      final idProfessora = int.parse(professoraSelecionada!);
       try {
-        alunos = List<Map<String, dynamic>>.from(await widget.dbHelper.listarAlunosPorProfessora(idProfessora));
+        // Buscando alunos por professora no Firestore
+        QuerySnapshot alunosSnapshot = await _firestore
+            .collection('alunos')
+            .where('professora_id', isEqualTo: professoraSelecionada)
+            .get();
+
+        alunos = alunosSnapshot.docs.map((doc) {
+          return {
+            'id': doc.id,
+            'nome': doc['nome'],
+          };
+        }).toList();
+
+        // Inicializando os estados dos alunos
         for (var aluno in alunos) {
           expandidos[aluno['id']] = false;
           presencasPorAluno[aluno['id']] = [];
@@ -53,10 +71,26 @@ class _BuscarAlunosPageState extends State<BuscarAlunosPage> {
 
   Future<void> carregarPresencas(int alunoId) async {
     try {
-      final presencas = await widget.dbHelper.listarPresencasPorAluno(alunoId);
+      // Buscando as presenças do aluno no Firestore
+      QuerySnapshot presencasSnapshot = await _firestore
+          .collection('presencas')
+          .where('aluno_id', isEqualTo: alunoId.toString())
+          .get();
+
+      List<Map<String, dynamic>> presencas = presencasSnapshot.docs.map((doc) {
+        return {
+          'dia': doc['dia'],
+          'presente': doc['presente'],
+          'dias_na_semana': doc['dias_na_semana'] ?? [],
+        };
+      }).toList();
+
       setState(() {
-        presencasPorAluno[alunoId] = List<Map<String, dynamic>>.from(presencas);
-        diasBloqueados = presencas.expand((p) => List<String>.from(p['dias_na_semana'] ?? [])).toSet().toList();
+        presencasPorAluno[alunoId] = presencas;
+        diasBloqueados = presencas
+            .expand((p) => List<String>.from(p['dias_na_semana'] ?? []))
+            .toSet()
+            .toList();
       });
     } catch (e) {
       print("Erro ao carregar presenças: $e");
@@ -71,19 +105,25 @@ class _BuscarAlunosPageState extends State<BuscarAlunosPage> {
       focusedDay: selectedDate,
       calendarBuilders: CalendarBuilders(
         defaultBuilder: (context, date, events) {
-          bool? presente = presencas.any((p) => DateTime.parse(p['dia']).isAtSameMomentAs(date) && p['presente']);
-          Color cor = presente == true ? Colors.green : (date.isAfter(DateTime.now()) ? Colors.grey : Colors.red);
+          bool? presente = presencas.any((p) =>
+              DateTime.parse(p['dia']).isAtSameMomentAs(date) && p['presente']);
+          Color cor = presente == true
+              ? Colors.green
+              : (date.isAfter(DateTime.now()) ? Colors.grey : Colors.red);
           return Container(
             margin: const EdgeInsets.all(4.0),
             decoration: BoxDecoration(color: cor, shape: BoxShape.circle),
             child: Center(
-              child: diasBloqueados.contains(date.weekdayToString()) ? Icon(Icons.lock, color: Colors.red) : null,
+              child: diasBloqueados.contains(date.weekdayToString())
+                  ? Icon(Icons.lock, color: Colors.red)
+                  : null,
             ),
           );
         },
       ),
       onDaySelected: (selectedDay, focusedDay) {
-        if (!selectedDay.isAfter(DateTime.now()) && !diasBloqueados.contains(selectedDay.weekdayToString())) {
+        if (!selectedDay.isAfter(DateTime.now()) &&
+            !diasBloqueados.contains(selectedDay.weekdayToString())) {
           setState(() {
             selectedDate = selectedDay;
           });
@@ -118,7 +158,8 @@ class _BuscarAlunosPageState extends State<BuscarAlunosPage> {
               }).toList(),
             ),
             SizedBox(height: 20),
-            ElevatedButton(onPressed: buscarAlunos, child: Text('Buscar Alunos')),
+            ElevatedButton(
+                onPressed: buscarAlunos, child: Text('Buscar Alunos')),
             SizedBox(height: 20),
             Expanded(
               child: ListView.builder(
@@ -151,12 +192,18 @@ class _BuscarAlunosPageState extends State<BuscarAlunosPage> {
 extension DateTimeExtension on DateTime {
   String weekdayToString() {
     switch (this.weekday) {
-      case 1: return 'Segunda-feira';
-      case 2: return 'Terça-feira';
-      case 3: return 'Quarta-feira';
-      case 4: return 'Quinta-feira';
-      case 5: return 'Sexta-feira';
-      default: return '';
+      case 1:
+        return 'Segunda-feira';
+      case 2:
+        return 'Terça-feira';
+      case 3:
+        return 'Quarta-feira';
+      case 4:
+        return 'Quinta-feira';
+      case 5:
+        return 'Sexta-feira';
+      default:
+        return '';
     }
   }
 }

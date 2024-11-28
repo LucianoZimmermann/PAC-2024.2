@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "995171914838",
+    "project_id": "pac-2024",
+    "storage_bucket": "pac-2024.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:995171914838:android:a7350e595acb08ac8257f7",
+        "android_client_info": {
+          "package_name": "com.example.amaescola"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDZg7iDmF-HniEQpADkrAxIRHpSIFZ8bkE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

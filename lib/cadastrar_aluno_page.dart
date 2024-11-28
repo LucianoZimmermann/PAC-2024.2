@@ -1,11 +1,7 @@
 import 'package:flutter/material.dart';
-import 'database_helper.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class CadastrarAlunoPage extends StatefulWidget {
-  final DatabaseHelper dbHelper;
-
-  CadastrarAlunoPage({required this.dbHelper});
-
   @override
   _CadastrarAlunoPageState createState() => _CadastrarAlunoPageState();
 }
@@ -13,7 +9,13 @@ class CadastrarAlunoPage extends StatefulWidget {
 class _CadastrarAlunoPageState extends State<CadastrarAlunoPage> {
   final TextEditingController _nomeController = TextEditingController();
   final TextEditingController _matriculaController = TextEditingController();
-  final List<String> diasDaSemana = ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira'];
+  final List<String> diasDaSemana = [
+    'Segunda-feira',
+    'Terça-feira',
+    'Quarta-feira',
+    'Quinta-feira',
+    'Sexta-feira'
+  ];
   Map<String, bool> diasSelecionados = {};
   List<Map<String, dynamic>> professoras = [];
   String? professoraSelecionada;
@@ -28,24 +30,46 @@ class _CadastrarAlunoPageState extends State<CadastrarAlunoPage> {
   }
 
   Future<void> carregarProfessoras() async {
-    professoras = List<Map<String, dynamic>>.from(await widget.dbHelper.listarProfessoras());
+    // Obtendo a lista de professoras do Firestore
+    final querySnapshot =
+        await FirebaseFirestore.instance.collection('professores').get();
+    professoras = querySnapshot.docs.map((doc) {
+      return {
+        'id': doc.id,
+        'nome': doc['nome'],
+      };
+    }).toList();
     setState(() {});
   }
 
   Future<void> cadastrarAluno() async {
     String nome = _nomeController.text.trim();
     String matricula = _matriculaController.text.trim();
-    List<String> dias = diasSelecionados.entries.where((entry) => entry.value).map((entry) => entry.key).toList();
+    List<String> dias = diasSelecionados.entries
+        .where((entry) => entry.value)
+        .map((entry) => entry.key)
+        .toList();
 
-    if (nome.isNotEmpty && matricula.isNotEmpty && professoraSelecionada != null) {
+    if (nome.isNotEmpty &&
+        matricula.isNotEmpty &&
+        professoraSelecionada != null) {
       try {
-        await widget.dbHelper.inserirAluno(nome, matricula, dias, int.parse(professoraSelecionada!));
-        Navigator.pop(context);
+        // Adicionando o aluno na coleção 'alunos' do Firestore
+        await FirebaseFirestore.instance.collection('alunos').add({
+          'nome': nome,
+          'matricula': matricula,
+          'dias': dias,
+          'professoraId': professoraSelecionada,
+          'dataCadastro': FieldValue.serverTimestamp(),
+        });
+        Navigator.pop(context); // Voltar para a tela anterior
       } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Erro ao cadastrar aluno: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Erro ao cadastrar aluno: $e')));
       }
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Preencha todos os campos corretamente.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Preencha todos os campos corretamente.')));
     }
   }
 
@@ -68,7 +92,8 @@ class _CadastrarAlunoPageState extends State<CadastrarAlunoPage> {
               decoration: InputDecoration(labelText: 'Número de Matrícula'),
             ),
             SizedBox(height: 20),
-            Text('Dias da Semana na Instituição:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text('Dias da Semana na Instituição:',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             Expanded(
               child: ListView.builder(
                 itemCount: diasDaSemana.length,
@@ -86,7 +111,8 @@ class _CadastrarAlunoPageState extends State<CadastrarAlunoPage> {
               ),
             ),
             SizedBox(height: 20),
-            Text('Selecione a Professora:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text('Selecione a Professora:',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             DropdownButton<String>(
               hint: Text('Escolha a professora'),
               value: professoraSelecionada,
